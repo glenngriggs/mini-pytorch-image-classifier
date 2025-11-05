@@ -37,12 +37,35 @@ def train_and_test(model_name, dataset, num_epochs, learning_rate, activation_fu
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     test_accuracy = None
-    # TODO: Train the network
+    # Training
     for epoch in range(num_epochs):
-        pass
-    # TODO: Test the network; Return the model and test accuracy in percentage
+        model.train()
+        for images, labels in train_loader:
+            images = images.to(device)
+            labels = labels.to(device)
+
+            # forward
+            outputs = model(images)
+            loss = criterion(outputs, labels)
+
+            # backward
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+    # Return the model and test accuracy in percentage
+    model.eval()
+    correct = 0
+    total = 0
     with torch.no_grad():
-        pass
+        for images, labels in test_loader:
+            images = images.to(device)
+            labels = labels.to(device)
+            outputs = model(images)
+            _, predicted = torch.max(outputs, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+
+    test_accuracy = 100.0 * correct / total
     
     return model, test_accuracy
 
@@ -51,12 +74,28 @@ def hyperparameters_grid_search(model_name, dataset):
     activation_function_name_options = ["sigmoid", "relu"]
     best_test_accuracy = 0
     best_hyperparameters = {"learning_rate": None, "activation_function_name": None}
-    # TODO: Complete grid search on learning rates and activation functions. Keep the number of epochs to be 5.
-    # You can use the following print statements to keep track of the hyperparameter search and finally output the best hyperparameters as well as the 
-    # print(f"Current hyperparameters: num_epochs=5, learning_rate={_}, activation_function_name={_}")
-    # print(f"Current accuracy for test images: {_}%")
-    # print(f"Best test accuracy: {best_test_accuracy}%")
-    # print("Best hyperparameters:", best_hyperparameters)
+    # Grid search on learning rates and activation functions.
+    for lr in learning_rate_options:
+        for act in activation_function_name_options:
+            print(f"Current hyperparameters: num_epochs=5, learning_rate={lr}, activation_function_name={act}")
+            _, acc = train_and_test(
+                model_name=model_name,
+                dataset=dataset,
+                num_epochs=5,
+                learning_rate=lr,
+                activation_function_name=act
+            )
+            print(f"Current accuracy for test images: {acc}%")
+
+            if acc > best_test_accuracy:
+                best_test_accuracy = acc
+                best_hyperparameters["learning_rate"] = lr
+                best_hyperparameters["activation_function_name"] = act
+            print(f"Best test accuracy: {best_test_accuracy}%")
+            print("Best hyperparameters:", best_hyperparameters)
+
+    # after loop you could also return them if you want
+    return best_test_accuracy, best_hyperparameters
     
 
 if __name__ == "__main__":
